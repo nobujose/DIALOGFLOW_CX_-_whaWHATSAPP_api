@@ -23,6 +23,7 @@ router.get('/webhook', (req, res) => {
 
 
 const { detectIntentText } = require('./dialogflowApi');
+const { appendToSheet } = require('./googleSheetApi');
 
 router.post('/webhook', async (req, res) => {
     try {
@@ -49,6 +50,15 @@ router.post('/webhook', async (req, res) => {
         const dialogflowResponse = await detectIntentText(query, `${senderPhoneNumberId}`); // Pass the sender ID to Dialogflow
         console.log(dialogflowResponse);
         const finalResponse = dialogflowResponse.response;
+
+        // Save to Google Sheet
+        const sheetData = {
+            timestamp: new Date().toISOString(),
+            sessionID: `${senderPhoneNumberId}`,
+            userUtterance: query,
+            agentUtterance: finalResponse
+        };
+        await appendToSheet(sheetData);
 
         const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
         const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
